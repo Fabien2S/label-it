@@ -3,7 +3,6 @@ require __DIR__ . "/vendor/autoload.php";
 
 use Com\Tecnick\Barcode\Barcode;
 use GuzzleHttp\Client;
-use Mike42\Escpos\EscposImage;
 use Mike42\Escpos\GdEscposImage;
 use Mike42\Escpos\PrintConnectors\FilePrintConnector;
 use Mike42\Escpos\Printer;
@@ -25,7 +24,7 @@ $client = new Client([
 
 // Perform asset request
 $response = $client->get("hardware/bytag/" . $_GET["tag"]);
-$asset = json_decode((string) $response->getBody(), true);
+$asset = json_decode((string)$response->getBody(), true);
 
 // Create image
 putenv('GDFONTPATH=' . realpath('.'));
@@ -43,31 +42,31 @@ $label = imagecreate($labelWidth, $labelHeight);
 $labelBackground = imagecolorallocate($label, 255, 255, 255);
 $labelColor = imagecolorallocate($label, 0, 0, 0);
 
-$barcode = new \Com\Tecnick\Barcode\Barcode();
+$barcode = new Barcode();
 
 // Barcode C39
 $labelBarcodeWidth = $labelWidth - 2 * $labelPadding;
-$labelBarcodeHeigth = 20 * $labelScale;
-{
+$labelBarcodeHeight = 40 * $labelScale;
+try {
     $labelBarcode = $barcode->getBarcodeObj(
         "C39", $asset["asset_tag"],
         $labelBarcodeWidth,
-        $labelBarcodeHeigth,
-        'black',                        // foreground color
-        array(0, 0, 0, 0)           // padding (use absolute or negative values as multiplication factors)
+        $labelBarcodeHeight
     )->getGd();
     imagecopy(
         $label, $labelBarcode,
         $labelPadding,
-        $labelHeight - $labelBarcodeHeigth - $labelPadding,
-        0, 0, $labelBarcodeWidth, $labelBarcodeHeigth
+        $labelHeight - $labelBarcodeHeight - $labelPadding,
+        0, 0, $labelBarcodeWidth, $labelBarcodeHeight
     );
     imagedestroy($labelBarcode);
+} catch (\Com\Tecnick\Barcode\Exception $e) {
+    imagestring($label, 1, $labelPadding, $labelHeight - $labelBarcodeHeight - $labelPadding, "Barcode error", $labelColor);
 }
 
 // QR Code
-$labelQRCodeSize = $labelHeight - 2 * $labelPadding - $labelSpacing- $labelBarcodeHeigth;
-{
+$labelQRCodeSize = $labelHeight - 2 * $labelPadding - $labelSpacing - $labelBarcodeHeight;
+try {
     $labelQRCode = $barcode->getBarcodeObj(
         "QRCODE,H", $_ENV["APP_LOOKUP_ENDPOINT"] . $asset["asset_tag"],
         $labelQRCodeSize, $labelQRCodeSize,
@@ -76,6 +75,8 @@ $labelQRCodeSize = $labelHeight - 2 * $labelPadding - $labelSpacing- $labelBarco
     )->getGd();
     imagecopy($label, $labelQRCode, $labelPadding, $labelPadding, 0, 0, $labelQRCodeSize, $labelQRCodeSize);
     imagedestroy($labelQRCode);
+} catch (\Com\Tecnick\Barcode\Exception $e) {
+    imagestring($label, 1, $labelPadding, $labelPadding, "QRCode error", $labelColor);
 }
 
 // Texts
