@@ -1,0 +1,8 @@
+{
+    "require": {
+        "mike42/escpos-php": "^4.0",
+        "guzzlehttp/guzzle": "^7.9",
+        "symfony/dotenv": "^7.1",
+        "tecnickcom/tc-lib-barcode": "^1.18"
+    }
+}
