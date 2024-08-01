@@ -1,4 +1,7 @@
 {
+  "autoload": {
+    "psr-4": {"LabelIT\\": "sources/"}
+  },
   "require": {
     "mike42/escpos-php": "^4.0",
     "guzzlehttp/guzzle": "^7.9",
