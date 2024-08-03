@@ -4,3 +4,6 @@
 # Composer
 composer.phar
 /vendor/
+
+# Env file
+.env
