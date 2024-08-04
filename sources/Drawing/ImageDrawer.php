@@ -1,12 +1,12 @@
 <?php
 
-namespace LabelIT;
+namespace LabelIT\Drawing;
 
 use Com\Tecnick\Barcode\Barcode;
 use Com\Tecnick\Barcode\Exception;
 use GdImage;
 
-class LabelGenerator
+class ImageDrawer
 {
     public const DEFAULT_WIDTH = 382;
     public const DEFAULT_HEIGHT = 182;
@@ -16,7 +16,7 @@ class LabelGenerator
 
     private readonly Barcode $barcode;
     private readonly GdImage $image;
-    private readonly LabelBounds $bounds;
+    private readonly ImageBounds $bounds;
 
     private readonly int $background;
     private readonly int $color;
@@ -25,7 +25,7 @@ class LabelGenerator
     {
         $this->barcode = new Barcode();
         $this->image = imagecreate($width, $height);
-        $this->bounds = new LabelBounds(0, 0, $width, $height);
+        $this->bounds = new ImageBounds(0, 0, $width, $height);
 
         // allocate black & white colors
         $this->background = imagecolorallocate($this->image, 0xFF, 0xFF, 0xFF);
@@ -37,31 +37,24 @@ class LabelGenerator
         imagedestroy($this->image);
     }
 
-    public function addText(string $text, LabelBounds $bounds, bool $bold = false, bool $centerHorizontal = false, bool $centerVertical = false): bool
+    public function addText(string $text, ImageBounds $bounds, bool $bold = false, bool $centerHorizontal = false, bool $centerVertical = false): bool
     {
         $font = $bold ? self::FONT_FILE_BOLD : self::FONT_FILE;
 
         // origin is lower-left
-        $textBounds = imageftbbox(1 * self::FONT_SIZE, 0, $font, $text);
+        $textBounds = imageftbbox(self::FONT_SIZE, 0, $font, $text);
         $textWidth = $textBounds[4];
         $textHeight = -$textBounds[5];
+
+        $textX = $centerHorizontal ? $bounds->x + ($bounds->width - $textWidth) / 2.0 : $bounds->x;
+        $textY = $centerVertical ? $bounds->y + ($bounds->height - $textHeight) / 2.0 : $bounds->y;
+
         if ($textWidth > $bounds->width || $textHeight > $bounds->height) {
-            $textGenerator = new LabelGenerator($textWidth, $textHeight);
-            $textResult = $textGenerator->addText($text, $textGenerator->bounds, $bold);
-            if ($textResult === false) {
+            $textGenerator = new ImageDrawer($textWidth, $textHeight);
+            if ($textGenerator->addText($text, $textGenerator->bounds, $bold) === false) {
                 return false;
             }
 
-            $textX = $bounds->x;
-            if ($centerHorizontal) {
-                $textX += ($bounds->width - $textWidth) / 2.0;
-            }
-
-            $textY = $bounds->y;
-            if ($centerVertical) {
-                $textY += ($bounds->height - $textHeight) / 2.0;
-            }
-            
             return imagecopyresized(
                 $this->image,
                 $textGenerator->image,
@@ -74,37 +67,21 @@ class LabelGenerator
             );
         }
 
-//        $size = self::FONT_SIZE * min(
-//                1.0,
-//                $bounds->width / $textBounds[4],
-//                $bounds->height / -$textBounds[5]
-//            );
-
-        $textX = $bounds->x;
-        if ($centerHorizontal) {
-            $textX += ($bounds->width - $textWidth) / 2.0;
-        }
-
-        $textY = $bounds->y + $textHeight;
-        if ($centerVertical) {
-            $textY += ($bounds->height - $textHeight) / 2.0;
-        }
-
         $textResult = imagefttext(
             $this->image,
             self::FONT_SIZE, 0.0,
-            $textX, $textY,
+            $textX, $textY + $textHeight,
             $this->color, $font, $text
         );
         return $textResult !== false;
     }
 
-    public function addBarcode(string $type, string $content, LabelBounds $bounds): bool
+    public function addBarcode(string $type, string $content, ImageBounds $bounds): bool
     {
         try {
             $barcodeImage = $this->barcode->getBarcodeObj($type, $content, $bounds->width, $bounds->height)->getGd();
             if (!$barcodeImage instanceof GdImage) {
-                $this->addText($content, $bounds, false);
+                $this->addText($content, $bounds, centerHorizontal: true, centerVertical: true);
                 return false;
             }
 
@@ -112,12 +89,12 @@ class LabelGenerator
             imagedestroy($barcodeImage);
             return true;
         } catch (Exception) {
-            $this->addText($content, $bounds, false);
+            $this->addText($content, $bounds, centerHorizontal: true, centerVertical: true);
             return false;
         }
     }
 
-    public function borderColor(LabelBounds $bounds, float $border = 2): void
+    public function borderColor(ImageBounds $bounds, float $border = 2): void
     {
         imagefilledrectangle(
             $this->image,
@@ -159,7 +136,7 @@ class LabelGenerator
         return $this->image;
     }
 
-    public function getBounds(): LabelBounds
+    public function getBounds(): ImageBounds
     {
         return $this->bounds;
     }

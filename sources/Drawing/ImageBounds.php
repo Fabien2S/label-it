@@ -1,8 +1,8 @@
 <?php
 
-namespace LabelIT;
+namespace LabelIT\Drawing;
 
-class LabelBounds
+class ImageBounds
 {
     public readonly float $x;
     public readonly float $y;
@@ -17,7 +17,7 @@ class LabelBounds
         $this->height = $height;
     }
 
-    public function shift(float $x, float $y): LabelBounds
+    public function shift(float $x, float $y): ImageBounds
     {
         return $this->topLeft(
             $this->width * $x,
@@ -26,13 +26,13 @@ class LabelBounds
         );
     }
 
-    public function pad(float $padding): LabelBounds
+    public function pad(float $padding): ImageBounds
     {
         if ($padding === 0.0) {
             return $this;
         }
 
-        return new LabelBounds(
+        return new ImageBounds(
             $this->x + $padding,
             $this->y + $padding,
             $this->width - $padding - $padding,
@@ -40,14 +40,14 @@ class LabelBounds
         );
     }
 
-    public function splitEvenly(float $columns, float $rows): LabelBounds
+    public function splitEvenly(float $columns, float $rows): ImageBounds
     {
         return $this->topLeft(0, 0, $this->width / $columns, $this->height / $rows);
     }
 
-    function topLeft(float $x, float $y, float $width, float $height): LabelBounds
+    function topLeft(float $x, float $y, float $width, float $height): ImageBounds
     {
-        return new LabelBounds(
+        return new ImageBounds(
             $this->x + $x,
             $this->y + $y,
             $width,
@@ -55,7 +55,7 @@ class LabelBounds
         );
     }
 
-    function bottomLeft(float $x, float $y, float $width, float $height): LabelBounds
+    function bottomLeft(float $x, float $y, float $width, float $height): ImageBounds
     {
         return $this->topLeft(
             $x,
@@ -65,7 +65,7 @@ class LabelBounds
         );
     }
 
-    function bottomRight(float $x, float $y, float $width, float $height): LabelBounds
+    function bottomRight(float $x, float $y, float $width, float $height): ImageBounds
     {
         return $this->topLeft(
             $this->width - $width - $x,
@@ -75,7 +75,7 @@ class LabelBounds
         );
     }
 
-    function topRight(float $x, float $y, float $width, float $height): LabelBounds
+    function topRight(float $x, float $y, float $width, float $height): ImageBounds
     {
         return $this->topLeft(
             $this->width - $width - $x,
